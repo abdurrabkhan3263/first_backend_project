@@ -59,7 +59,30 @@ userSchema.pre("save", async function (next) {
 // if our work is done so we always call next which means flag pass another
 
 userSchema.methods.isPasswordCorrect = async function (password) {
-  return await bcrypt.compare(password, this.password);
+  // WE CAN ADD OUR OWN METHOD USING schemaName --> schema.methods
+  return await bcrypt.compare(password, this.password); // we can compare the user enter password and the database password using BCRYPT.COMPARE
+};
+
+userSchema.methods.generateAccessToken = function () {
+  return jwt.sign(
+    {
+      _id: this._id, // jwt ke ander database ki sari value ki access hai in THIS
+      email: this.email,
+      userName: this.userName,
+      fullName: this.fullName,
+    },
+    process.env.ACCESS_TOKEN_SECRET,
+    { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
+  );
+};
+userSchema.methods.generateRefreshToken = function () {
+  return jwt.sign(
+    {
+      _id: this.id,
+    },
+    process.env.REFRESH_TOKEN_SECRET,
+    { expiresIn: REFRESH_TOKEN_EXPIRY }
+  );
 };
 
 export const User = mongoose.model("User", userSchema);
