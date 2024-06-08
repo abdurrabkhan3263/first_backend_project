@@ -23,4 +23,13 @@ app.use(express.static("public"));
 // cookieParse ---> it is used to set the cookie in the user brower like perform crude operation
 app.use(cookieParser());
 
+// routes import
+import userRouter from "./routes/user.routes.js";
+
+// routes declaration
+// app.get        YAHAN PER HAM GET KO NAHI USE KARENGE BECAUSE HAM ROUTES KO ALAGA SE IMPORT KARA RAHE HAIN YAHAN per ROUTER KO LANE KE LIYE HAMEIN MIDDLEWARE KO LANA JARURI HAI
+// ISS KE LIYE HAM app.use ko use karenge app.use()
+app.use("/api/v1/users", userRouter);
+// ⏫ abe route kuch iss tarah se hoga https://localhost:8000/api/v1/users/register
+// iss se fayda ye hua ki ager hamein /users/register && /users/login to hamein baar baar likhna nahi hoga route mein ham /register laga denge
 export { app };
