@@ -53,7 +53,7 @@ const userSchema = new Schema(
 
 userSchema.pre("save", async function (next) {
   if (!this.isModified("password")) return next(); // in mongodb we have isModified field that want what value want to check as a parameter
-  this.password = bcrypt.hash(this.password, 10); // bcrypt.hash(what to encrypt,number of round)
+  this.password = await bcrypt.hash(this.password, 10); // bcrypt.hash(what to encrypt,number of round)
   next();
 }); // userSchema.pre("eventName",callback this we want to use this so we does not use arrow function)
 // if our work is done so we always call next which means flag pass another
