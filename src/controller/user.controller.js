@@ -25,13 +25,17 @@ const registerUser = asyncHandler(async (req, res) => {
   ) {
     throw new ApiError(400, "All Fields are Required");
   }
-  const existedUser = User.findOne({ $or: [{ username }, { email }] }); // using {$or:[{},{}]} --> we can find many value
+  const existedUser = await User.findOne({ $or: [{ username }, { email }] }); // using {$or:[{},{}]} --> we can find many value
   if (existedUser) {
     throw new ApiError(409, "User with email or username already exits");
   }
   // req.files --> req.body KA ACCESS EXPRESS DETA HAI WAISE HI --> req.files KA ACCESS MULTER JO KI MIDDLEWARE HAI WOH DETA HAI
   const avatarLocalPath = req.files?.avatar[0]?.path;
-  const coverImageLocalPath = req.files?.coverImage[0]?.path;
+  // const coverImageLocalPath = req.files?.coverImage[0]?.path ?? "";
+  let coverImageLocalPath;
+  if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage[0].length > 0){
+    coverImageLocalPath = req.file.coverImage[0].path
+  }
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is Required");
   }
@@ -44,7 +48,7 @@ const registerUser = asyncHandler(async (req, res) => {
   const user = await User.create({
     fullName,
     avatar: avatar.url,
-    coverImage: coverImage.url || "",
+    coverImage: coverImage?.url || "",
     email,
     password,
     username: username.toLowerCase(),
