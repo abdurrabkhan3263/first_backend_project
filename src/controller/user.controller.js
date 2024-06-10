@@ -5,6 +5,26 @@ import { User } from "../modules/user.model.js"; // if can be direct contact wit
 import { uploadOnCloundinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 
+const generateAccessAndRefreshTokens = async (userId) => {
+  try {
+    const user = await User.findById(userId);
+    const accessToken = user.generateAccessToken();
+    const refreshToken = user.generateRefreshToken();
+    user.refreshToken = refreshToken;
+    await user.save({ validateBeforeSave: false });
+
+    // --> save method is used to save the data in the mongodb database --> jo kuch bhi ham ne change kiya hai
+    // --> while saving the data MONGOOSE METHOD WILL KICK IN WHICH MEAN --> jo ham se password ko require kiya hai uss ke liye error aayega bole ga password is require iss ke liye ham use karte hai ye user.save({validateBeforeSave:false})
+
+    return { accessToken, refreshToken };
+  } catch (error) {
+    throw new ApiError(
+      500,
+      "Something went wrong while generating refresh and access token"
+    );
+  }
+};
+
 const registerUser = asyncHandler(async (req, res) => {
   // 1 get user Details from frontend
   // 2 validation - not empty
@@ -33,8 +53,12 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.files?.avatar[0]?.path;
   // const coverImageLocalPath = req.files?.coverImage[0]?.path ?? "";
   let coverImageLocalPath;
-  if(req.files && Array.isArray(req.files.coverImage) && req.files.coverImage[0].length > 0){
-    coverImageLocalPath = req.file.coverImage[0].path
+  if (
+    req.files &&
+    Array.isArray(req.files.coverImage) &&
+    req.files.coverImage[0].length > 0
+  ) {
+    coverImageLocalPath = req.file.coverImage[0].path;
   }
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is Required");
@@ -63,4 +87,75 @@ const registerUser = asyncHandler(async (req, res) => {
     .status(201)
     .json(new ApiResponse(201, createdUser, "User registered Successfully"));
 });
-export { registerUser };
+const loginUser = asyncHandler(async (req, res) => {
+  // req-body --> data
+  // email/username && pass is there or not if not throw error
+  // find the user
+  // if not throw erorr
+  // password check throw error --> else access and refresh token
+  // then send cookie
+  const { username, email, password } = req.body;
+
+  if (!password) throw new ApiError(400, "Password is Required");
+
+  if (!username || !email) throw new ApiError(400, "User or Email is Required");
+
+  const isUserExist = await User.findOne({ $or: [{ username }, { email }] });
+
+  if (!isUserExist) throw new ApiError(404, "User Does Not Exist");
+
+  const isPasswordCorrect = await isUserExist.isPasswordCorrect(password); // User ke pass isPasswordCorrect Nahi Hoga Jo User Hamne Banaya Hai Uss ke Ander Hoga Hamara User
+
+  if (!isPasswordCorrect) throw new ApiError(401, "Invalid user credentials");
+
+  const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+    isUserExist._id
+  );
+  const loggedInUser = await User.findById(isUserExist._id).select(
+    "-password -refreshToken"
+  );
+  const options = {
+    httpOnly: true, // --> in the cookies by default we can modify it but when we use httpOnly it cannot modified from frontend it only modified by server
+    secure: true,
+  };
+
+  return res
+    .status(200)
+    .cookie("accessToken", accessToken, options) // through cookie parser     WE WILL BE ABLE TO ADD THE COOKIE
+    .cookie("refreshToken", refreshToken, options)
+    .json(
+      new ApiResponse(
+        200,
+        {
+          user: loggedInUser,
+          accessToken,
+          refreshToken,
+        },
+        "User logged In SuccessFully"
+      )
+    );
+});
+
+const logoutUser = asyncHandler(async (req, res) => {
+  const user = req.user._id; // this is done in the middleware --> kyunki next() call karne se pahle  ham ne daal diya tha
+  await User.findByIdAndUpdate(
+    user,
+    {
+      $set: { refreshToken: undefined },
+    },
+    {
+      new: true, // ISS SE JAB HEMIN RETURN MEIN VALUE MILEGI WOH UPDATED WALI HOGI AGER  HAMNE ISS KO KISE VARIBLE MEIN DAALTE HAI AUR CONSOLE KARATE HAIN TO
+    }
+  );
+  const options = {
+    httpOnly: true,
+    secure: true,
+  };
+  return res
+    .status(200)
+    .clearCookie("accessToken", options)
+    .clearCookie("refreshToken", options)
+    .json(new ApiResponse(200, "", "User logged Out"));
+});
+
+export { registerUser, loginUser, logoutUser };

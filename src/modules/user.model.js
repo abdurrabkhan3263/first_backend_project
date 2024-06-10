@@ -51,8 +51,10 @@ const userSchema = new Schema(
   { timestamps: true }
 );
 
+// PRE --> pre method is used for if we want to add some thing before going to save in the DATABASE
 userSchema.pre("save", async function (next) {
-  if (!this.isModified("password")) return next(); // in mongodb we have isModified field that want what value want to check as a parameter
+  // in side the this we have the access of all the field bcz it make fro userSchema
+  if (!this.isModified("password")) return next(); // in mongodb we have isModified field that want what value want to check as a parameter --> if that parameter if change than do bcrypt ELSE going to next()
   this.password = await bcrypt.hash(this.password, 10); // bcrypt.hash(what to encrypt,number of round)
   next();
 }); // userSchema.pre("eventName",callback this we want to use this so we does not use arrow function)
@@ -60,9 +62,10 @@ userSchema.pre("save", async function (next) {
 
 userSchema.methods.isPasswordCorrect = async function (password) {
   // WE CAN ADD OUR OWN METHOD USING schemaName --> schema.methods
-  return await bcrypt.compare(password, this.password); // we can compare the user enter password and the database password using BCRYPT.COMPARE
+  return await bcrypt.compare(password, this.password); // we can compare the user enter password and the database password using BCRYPT.COMPARE --> it return boolean value FALSE TRUE
 };
-
+// ACCESS TOKEN EXPIRE IN SHORT DURATION
+//  --> WE CAN ACCESS ANY FEATURE IF WE HAVE ACCESS TOKEN
 userSchema.methods.generateAccessToken = function () {
   return jwt.sign(
     {
@@ -75,6 +78,8 @@ userSchema.methods.generateAccessToken = function () {
     { expiresIn: process.env.ACCESS_TOKEN_EXPIRY }
   );
 };
+// REFRESH TOKEN EXPIRE IN LONG DURATION
+//  USED FOR AUTHENTICATION
 userSchema.methods.generateRefreshToken = function () {
   return jwt.sign(
     {

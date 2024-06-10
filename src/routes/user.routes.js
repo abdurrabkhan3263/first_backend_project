@@ -1,6 +1,11 @@
 import { Router } from "express";
-import { registerUser } from "../controller/user.controller.js";
+import {
+  loginUser,
+  logoutUser,
+  registerUser,
+} from "../controller/user.controller.js";
 import { upload } from "../middleware/multer.middleware.js";
+import { verifyJWT } from "../middleware/auth.middleware.js";
 
 const router = Router();
 
@@ -18,6 +23,12 @@ router.route("/register").post(
   registerUser
 );
 // jaise yahan per router.route("/login").post(loginUser)
+
+router.route("/login").post(loginUser);
+
+// Secured Routes
+
+router.route("/logout").post(verifyJWT, logoutUser); // FOR THIS KIND OF SITUATION WE ARE GOING TO ADD NEXT() BCZ ROUTER GOING TO CONFUSE --> AGER KAAM HUA TO NEXT PER CHALE JAO MEANS LOGOUTUSER --> THROW ERROR LIKH HI HOGA
 
 export default router;
 
