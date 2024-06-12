@@ -2,6 +2,7 @@ import { Router } from "express";
 import {
   loginUser,
   logoutUser,
+  refreshAccessToken,
   registerUser,
 } from "../controller/user.controller.js";
 import { upload } from "../middleware/multer.middleware.js";
@@ -29,6 +30,8 @@ router.route("/login").post(loginUser);
 // Secured Routes
 
 router.route("/logout").post(verifyJWT, logoutUser); // FOR THIS KIND OF SITUATION WE ARE GOING TO ADD NEXT() BCZ ROUTER GOING TO CONFUSE --> AGER KAAM HUA TO NEXT PER CHALE JAO MEANS LOGOUTUSER --> THROW ERROR LIKH HI HOGA
+
+router.route("/refresh-token").post(refreshAccessToken);
 
 export default router;
 
