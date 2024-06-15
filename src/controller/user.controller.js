@@ -1,9 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../modules/user.model.js"; // if can be direct contact with the database bcz is the made by mongoose
-import { uploadOnCloundinary } from "../utils/cloudinary.js";
+import { deleteSingleImage, uploadOnCloundinary } from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
+import mongoose from "mongoose";
 
 const generateAccessAndRefreshTokens = async (userId) => {
   try {
@@ -243,6 +244,11 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
     { new: true }
   ).select("-password");
 
+  const avatarForDelete = req.user?.avatar;
+  if (avatarForDelete) {
+    await deleteSingleImage(avatarForDelete);
+  }
+
   return res
     .status(201)
     .json(new ApiResponse(201, user, "Avatar is Updated Successfully"));
@@ -270,6 +276,136 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     .json(new ApiResponse(200, user, "CoverImage Updated SuccessFully"));
 });
 
+const getUserChannelProfile = asyncHandler(async (req, res) => {
+  const { username } = req.params;
+  if (!username?.trim()) throw new ApiError(400, "username is missing");
+  const channel = await User.aggregate([
+    {
+      $match: {
+        // ham User mein se username ko match kar rahe hain apne username se
+        username: username?.toLowerCase(),
+      },
+    },
+    // HERE ONLY ONE DOCUMENT IS THERE AND THE BELOW CODE TO SEE LIKE WE ADD ON THE ONE DOCUMENT
+    {
+      $lookup: {
+        // Insert Value
+        from: "subscriptions",
+        localField: "_id", // In the match section we get the _id from that document
+        foreignField: "channel",
+        as: "subscribers",
+      },
+    },
+    {
+      $lookup: {
+        from: "subscriptions",
+        localField: "_id",
+        foreignField: "subscriber",
+        as: "subscribedTo",
+      },
+    },
+    {
+      $addFields: {
+        // use to add the additional field on the match section user
+        subscriberCount: {
+          $size: "$subscribers",
+        },
+        channelsSubscribedToCount: {
+          $size: "$subscribedTo",
+        },
+        isSubscribed: {
+          $cond: {
+            if: {
+              $in: [req.user?._id, "$subscribers.subscriber"],
+            } /* $in :[issKoDekho , "issMeinSe"] Hai Ya Phir Nahi */,
+            then: true, // if IF CONDITION IS TRUE then We Use THEN
+            else: false, //if IF CONDITION IS FALSE then we Use ELSE
+          },
+        },
+      },
+    },
+    {
+      $project: {
+        // that that data we what to return --> jise return karna hai uss 1 to wahi data jayega
+        fullName: 1,
+        username: 1,
+        subscriberCount: 1,
+        channelsSubscribedToCount: 1,
+        isSubscribed: 1,
+        avatar: 1,
+        coverImage: 1,
+        email: 1,
+      },
+    },
+  ]);
+  console.log(channel);
+  if (!channel?.length) throw new ApiError(404, "Channel does not Exists");
+  return res
+    .state(200)
+    .json(
+      new ApiResponse(200, channel[0], "User Channel fetched Successfully")
+    );
+});
+
+const getWatchHistory = asyncHandler(async (req, res) => {
+  const id = req.user?._id;
+  if (!username?.trim()) throw new ApiError(400, "Username is Missing");
+  const watchHistory = await User.aggregate([
+    {
+      $match: {
+        _id: new mongoose.Types.ObjectId(id), // HERE WE CAN NOT DIRECTLY SEND THE ID BECAUSE WE NEED OBJECTID(ID) --> BUT WHEN WE USE MONGOOSE BEHIND THE SENSE IT CONVERT INTO THIS TYPE
+      },
+    },
+    {
+      $lookup: {
+        // also we can directly add the array which inside the array have id
+        from: "videos",
+        localField: "watchHistory",
+        foreignField: "_id",
+        as: "watchHistory",
+        //HERE WE HAVE BUNCH OF DOCUMENT OF VIDEO --> BUT WE DOES NOT HAVING OWNER ID SO WE NEED ONE MORE PIPE LINE TO GET THE USER
+        pipeline: [
+          // HERE WE ADD ADDITIONAL PIPELINE THROUGH THIS CAN ADD ADD MORE THAN ONE PIPELINE
+          {
+            $lookup: {
+              from: "users",
+              localField: "owner",
+              foreignField: "_id",
+              as: "owner",
+              //HERE WE HAVE THE VALUE OF USER SO IF WE ADD THE  PIPELINE HERE SO ONLY EFFECT ON users
+              pipeline: [
+                {
+                  $project: {
+                    fullName: 1,
+                    username: 1,
+                    avatar: 1,
+                  },
+                },
+              ],
+            },
+          },
+          {
+            $addFields: {
+              owner: {
+                $first: "$owner",
+              },
+            },
+          },
+        ],
+      },
+    },
+  ]);
+  return res
+    .state(200)
+    .json(
+      new ApiResponse(
+        200,
+        watchHistory[0].watchHistory,
+        "Watch History Fetch Successfully"
+      )
+    );
+});
+
 export {
   registerUser,
   loginUser,
@@ -280,4 +416,6 @@ export {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getUserChannelProfile,
+  getWatchHistory,
 };
