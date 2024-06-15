@@ -230,7 +230,7 @@ const updateAccountDetails = asyncHandler(async (req, res) => {
 
 const updateUserAvatar = asyncHandler(async (req, res) => {
   // const avatarLocalPath = req.files?.avatar[0]?.path. files tab lagayenge to ek se jeyada file ko upload karna ho aur wahan per bhi ham array mein se files le kar aa rahe the
-  const avatarLocalPath = req.files?.avatar[0]?.path;
+  const avatarLocalPath = req.file?.path;
 
   if (!avatarLocalPath) throw new ApiError(400, "Avatar is Missing");
 
@@ -255,7 +255,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
 });
 
 const updateUserCoverImage = asyncHandler(async (req, res) => {
-  const coverImageLocalPath = req.file?.coverImage[0]?.path;
+  const coverImageLocalPath = req.file?.path;
   if (!coverImageLocalPath) throw new ApiError(400, "CoverImage is Missing");
   const coverImage = await uploadOnCloundinary(coverImageLocalPath);
   if (!coverImage.url)
