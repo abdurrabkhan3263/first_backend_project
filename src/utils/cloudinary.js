@@ -22,15 +22,15 @@ const uploadOnCloundinary = async (localFilePath) => {
   }
 };
 
-const deleteSingleImage = async (publicId) => {
+const deleteSingleImage = async (publicId, resourceType) => {
   try {
-    if (publicId) return null;
+    if (!publicId || !resourceType) return null;
     const response = await cloudinary.uploader.destroy(publicId, {
-      resource_type: auto,
+      resource_type: resourceType,
     });
     return response;
   } catch (error) {
-    throw ("Cloudinary DeleteImage :: Error :: ", error);
+    throw ("Cloudinary DeleteImage :: Error :: ", error.message);
   }
 };
 

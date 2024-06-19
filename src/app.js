@@ -25,6 +25,7 @@ app.use(cookieParser());
 
 // routes import
 import userRouter from "./routes/user.routes.js";
+import videoRouter from "./routes/video.routes.js";
 
 // routes declaration
 // app.get        YAHAN PER HAM GET KO NAHI USE KARENGE BECAUSE HAM ROUTES KO ALAGA SE IMPORT KARA RAHE HAIN YAHAN per ROUTER KO LANE KE LIYE HAMEIN MIDDLEWARE KO LANA JARURI HAI
@@ -32,4 +33,9 @@ import userRouter from "./routes/user.routes.js";
 app.use("/api/v1/users", userRouter);
 // ⏫ abe route kuch iss tarah se hoga https://localhost:8000/api/v1/users/register
 // iss se fayda ye hua ki ager hamein /users/register && /users/login to hamein baar baar likhna nahi hoga route mein ham /register laga denge
+
+// Video Section
+
+app.use("/api/v1/video", videoRouter);
+
 export { app };

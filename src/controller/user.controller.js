@@ -59,12 +59,13 @@ const registerUser = asyncHandler(async (req, res) => {
   const avatarLocalPath = req.files?.avatar[0]?.path;
   // const coverImageLocalPath = req.files?.coverImage[0]?.path ?? "";
   let coverImageLocalPath;
+  console.log("COVER IMAGE ::     ", req.files?.coverImage);
   if (
     req.files &&
-    Array.isArray(req.files.coverImage) &&
-    req.files.coverImage[0].length > 0
+    Array.isArray(req.files?.coverImage) &&
+    req.files?.coverImage.length > 0
   ) {
-    coverImageLocalPath = req.file.coverImage[0].path;
+    coverImageLocalPath = req.files.coverImage[0].path;
   }
   if (!avatarLocalPath) {
     throw new ApiError(400, "Avatar file is Required");
@@ -77,8 +78,13 @@ const registerUser = asyncHandler(async (req, res) => {
   // entry on the database
   const user = await User.create({
     fullName,
-    avatar: avatar.url,
-    coverImage: coverImage?.url || "",
+    avatar: { avatar_url: avatar?.url, public_id: avatar?.public_id },
+    coverImage:
+      (coverImage?.url && {
+        avatar_url: coverImage.url,
+        public_id: avatar.public_id,
+      }) ||
+      "",
     email,
     password,
     username: username.toLowerCase(),
@@ -143,7 +149,7 @@ const logoutUser = asyncHandler(async (req, res) => {
   await User.findByIdAndUpdate(
     user,
     {
-      $set: { refreshToken: undefined },
+      $unset: { refreshToken: 1 },
     },
     {
       new: true, // ISS SE JAB HEMIN RETURN MEIN VALUE MILEGI WOH UPDATED WALI HOGI AGER  HAMNE ISS KO KISE VARIBLE MEIN DAALTE HAI AUR CONSOLE KARATE HAIN TO
@@ -158,7 +164,7 @@ const logoutUser = asyncHandler(async (req, res) => {
 
 const refreshAccessToken = asyncHandler(async (req, res) => {
   const incomingRefreshToken =
-    req.cookie.refreshAccessToken || req.body.refreshToken;
+    req.cookies.refreshToken || req.body.refreshToken;
 
   if (!incomingRefreshToken) throw new ApiError(401, "Unauthorized Request");
 
@@ -175,17 +181,18 @@ const refreshAccessToken = asyncHandler(async (req, res) => {
     if (incomingRefreshToken !== user?.refreshToken)
       throw new ApiError(401, "Refresh Token is Used or Expired");
 
-    const { accessToken, newRefreshToken } =
-      await generateAccessAndRefreshTokens(user._id);
+    const { accessToken, refreshToken } = await generateAccessAndRefreshTokens(
+      user._id
+    );
 
     return res
       .status(200)
       .cookie("accessToken", accessToken, options)
-      .cookie("refreshToken", newRefreshToken, options)
+      .cookie("refreshToken", refreshToken, options)
       .json(
         new ApiResponse(
           201,
-          { user, accessToken, newRefreshToken },
+          { user, accessToken, refreshToken },
           "Access token refreshed"
         )
       );
@@ -237,16 +244,19 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   const avatar = await uploadOnCloundinary(avatarLocalPath);
 
   if (!avatar.url) throw new ApiError(500, "Error while uploading on avatar");
-
+  const avatarDeleteFile = (await User.findById(req.user?._id))?.avatar;
   const user = await User.findByIdAndUpdate(
     req.user?._id,
-    { $set: { avatar: avatar?.url } },
+    {
+      $set: {
+        avatar: { avatar_url: avatar?.url, public_id: avatar?.public_id },
+      },
+    },
     { new: true }
   ).select("-password");
 
-  const avatarForDelete = req.user?.avatar;
-  if (avatarForDelete) {
-    await deleteSingleImage(avatarForDelete);
+  if (avatarDeleteFile?.public_id.trim()) {
+    await deleteSingleImage(avatarDeleteFile?.public_id, "image");
   }
 
   return res
@@ -263,10 +273,20 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
       401,
       "Something Went wrong while uploading the cover image"
     );
+  const userDetails = await User.findById(req.user?.id);
+  const oldCoverImage = userDetails?.coverImage;
+  if (oldCoverImage?.public_id.trim()) {
+    await deleteSingleImage(oldCoverImage?.public_id, "image");
+  }
   const user = await User.findByIdAndUpdate(
     req.user?._id,
     {
-      $set: { coverImage: coverImage.url },
+      $set: {
+        coverImage: {
+          coverImage_url: coverImage?.url,
+          public_id: coverImage?.public_id,
+        },
+      },
     },
     { new: true }
   ).select("-password");
@@ -338,10 +358,9 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
       },
     },
   ]);
-  console.log(channel);
   if (!channel?.length) throw new ApiError(404, "Channel does not Exists");
   return res
-    .state(200)
+    .status(200)
     .json(
       new ApiResponse(200, channel[0], "User Channel fetched Successfully")
     );
@@ -349,7 +368,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
 
 const getWatchHistory = asyncHandler(async (req, res) => {
   const id = req.user?._id;
-  if (!username?.trim()) throw new ApiError(400, "Username is Missing");
+  if (!id) throw new ApiError(400, "Username is Missing");
   const watchHistory = await User.aggregate([
     {
       $match: {
@@ -396,7 +415,7 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     },
   ]);
   return res
-    .state(200)
+    .status(200)
     .json(
       new ApiResponse(
         200,
