@@ -26,6 +26,7 @@ app.use(cookieParser());
 // routes import
 import userRouter from "./routes/user.routes.js";
 import videoRouter from "./routes/video.routes.js";
+import tweetRouter from "./routes/tweet.routes.js";
 
 // routes declaration
 // app.get        YAHAN PER HAM GET KO NAHI USE KARENGE BECAUSE HAM ROUTES KO ALAGA SE IMPORT KARA RAHE HAIN YAHAN per ROUTER KO LANE KE LIYE HAMEIN MIDDLEWARE KO LANA JARURI HAI
@@ -38,4 +39,5 @@ app.use("/api/v1/users", userRouter);
 
 app.use("/api/v1/video", videoRouter);
 
+app.use("/api/v1/tweet", tweetRouter);
 export { app };

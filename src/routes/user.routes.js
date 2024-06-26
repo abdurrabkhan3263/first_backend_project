@@ -11,6 +11,7 @@ import {
   updateAccountDetails,
   updateUserAvatar,
   updateUserCoverImage,
+  getCertainData,
 } from "../controller/user.controller.js";
 import { upload } from "../middleware/multer.middleware.js";
 import { verifyJWT } from "../middleware/auth.middleware.js";
@@ -50,6 +51,7 @@ router
   .patch(verifyJWT, upload.single("coverImage"), updateUserCoverImage);
 router.route("/channel/:username").get(verifyJWT, getUserChannelProfile); // when you try to get the data from params you have to user :andName also you have to use exact name to inside the {username} = req.params
 router.route("/history").get(verifyJWT, getWatchHistory);
+router.route("/get").get(verifyJWT, getCertainData);
 
 export default router;
 

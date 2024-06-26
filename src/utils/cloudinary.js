@@ -9,7 +9,7 @@ cloudinary.config({
 
 const uploadOnCloundinary = async (localFilePath) => {
   try {
-    if (!localFilePath) return null;
+    if (!localFilePath) return undefined;
     //upload the file on cloudinary
     const response = await cloudinary.uploader.upload(localFilePath, {
       resource_type: "auto",
@@ -22,7 +22,7 @@ const uploadOnCloundinary = async (localFilePath) => {
   }
 };
 
-const deleteSingleImage = async (publicId, resourceType) => {
+const deleteOnCloudinary = async (publicId, resourceType) => {
   try {
     if (!publicId || !resourceType) return null;
     const response = await cloudinary.uploader.destroy(publicId, {
@@ -34,4 +34,4 @@ const deleteSingleImage = async (publicId, resourceType) => {
   }
 };
 
-export { uploadOnCloundinary, deleteSingleImage };
+export { uploadOnCloundinary, deleteOnCloudinary };

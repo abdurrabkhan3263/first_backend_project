@@ -1,7 +1,10 @@
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ApiError } from "../utils/ApiError.js";
 import { User } from "../modules/user.model.js"; // if can be direct contact with the database bcz is the made by mongoose
-import { deleteSingleImage, uploadOnCloundinary } from "../utils/cloudinary.js";
+import {
+  deleteOnCloudinary,
+  uploadOnCloundinary,
+} from "../utils/cloudinary.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import jwt from "jsonwebtoken";
 import mongoose from "mongoose";
@@ -256,7 +259,7 @@ const updateUserAvatar = asyncHandler(async (req, res) => {
   ).select("-password");
 
   if (avatarDeleteFile?.public_id.trim()) {
-    await deleteSingleImage(avatarDeleteFile?.public_id, "image");
+    await deleteOnCloudinary(avatarDeleteFile?.public_id, "image");
   }
 
   return res
@@ -275,8 +278,8 @@ const updateUserCoverImage = asyncHandler(async (req, res) => {
     );
   const userDetails = await User.findById(req.user?.id);
   const oldCoverImage = userDetails?.coverImage;
-  if (oldCoverImage?.public_id.trim()) {
-    await deleteSingleImage(oldCoverImage?.public_id, "image");
+  if (oldCoverImage && oldCoverImage?.public_id.trim()) {
+    await deleteOnCloudinary(oldCoverImage?.public_id, "image");
   }
   const user = await User.findByIdAndUpdate(
     req.user?._id,
@@ -324,6 +327,7 @@ const getUserChannelProfile = asyncHandler(async (req, res) => {
         as: "subscribedTo",
       },
     },
+    // * WE ALWAYS HAVE TO ADD THE FIELDS FOR BOTH JOINED VALUE IF NOT DATA IS NOT SHOWING
     {
       $addFields: {
         // use to add the additional field on the match section user
@@ -425,6 +429,15 @@ const getWatchHistory = asyncHandler(async (req, res) => {
     );
 });
 
+const getCertainData = asyncHandler(async (req, res) => {
+  const user = req?.user._id;
+  if (!user) throw new ApiError(401, "user is not authorize to do this");
+  const data = await User.findById(user, { fullName: 1 });
+  return res
+    .status(200)
+    .json(new ApiResponse(200, data, "Fetched successfully"));
+});
+
 export {
   registerUser,
   loginUser,
@@ -437,4 +450,5 @@ export {
   updateUserCoverImage,
   getUserChannelProfile,
   getWatchHistory,
+  getCertainData,
 };
