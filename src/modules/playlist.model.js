@@ -18,6 +18,7 @@ const playlistSchema = Schema(
     owner: {
       type: Schema.Types.ObjectId,
       ref: "Video",
+      required: true,
     },
   },
   { timestamps: true }

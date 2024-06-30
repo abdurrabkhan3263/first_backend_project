@@ -40,7 +40,6 @@ const getUserChannelSubscribers = asyncHandler(async (req, res) => {
   const { id: channelId } = req.params;
   if (!isValidObjectId(channelId))
     throw new ApiError(400, "channel id must required");
-
   const response = await Subscription.aggregate([
     {
       $match: {

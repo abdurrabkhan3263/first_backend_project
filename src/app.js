@@ -28,6 +28,8 @@ import userRouter from "./routes/user.routes.js";
 import videoRouter from "./routes/video.routes.js";
 import tweetRouter from "./routes/tweet.routes.js";
 import subscription from "./routes/subscription.routes.js";
+import playlist from "./routes/playlist.routes.js";
+import like from "./routes/like.routes.js";
 
 // routes declaration
 // app.get        YAHAN PER HAM GET KO NAHI USE KARENGE BECAUSE HAM ROUTES KO ALAGA SE IMPORT KARA RAHE HAIN YAHAN per ROUTER KO LANE KE LIYE HAMEIN MIDDLEWARE KO LANA JARURI HAI
@@ -43,5 +45,9 @@ app.use("/api/v1/video", videoRouter);
 app.use("/api/v1/tweet", tweetRouter);
 
 app.use("/api/v1/channel", subscription);
+
+app.use("/api/v1/playlist", playlist);
+
+app.use("/api/v1/like", like);
 
 export { app };

@@ -3,10 +3,13 @@
     "terminal.integrated.fontSize": 20,
     "cSpell.words": [
         "COLOUDINARY",
+        "foreignfield",
+        "localfield",
         "Togglepublish"
     ],
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.formatOnPaste": true,
-    "editor.wordWrap": "on"
+    "editor.wordWrap": "on",
+    "editor.lineHeight": 0
 }
