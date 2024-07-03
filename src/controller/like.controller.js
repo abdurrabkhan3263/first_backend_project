@@ -3,12 +3,16 @@ import { Like } from "../modules/like.model.js";
 import { ApiError } from "../utils/ApiError.js";
 import { ApiResponse } from "../utils/ApiResponse.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
+import { Video } from "../modules/video.model.js";
 
 const toggleVideoLike = asyncHandler(async (req, res) => {
   const { videoId } = req.params;
   const userId = req?.user._id;
 
   if (!isValidObjectId(videoId)) throw new ApiError(400, "Invalid Video id");
+
+  const video = await Video.findById(videoId);
+  if (!video) throw new ApiError(404, "Video not found");
 
   const likeDocs = await Like.findOne({ likedBy: userId, video: videoId });
 
